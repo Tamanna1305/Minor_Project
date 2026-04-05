@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindGuard — Mental Health Assessment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="/dashboard" class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    MindGuard
+  </a>
+  <ul class="nav-links">
+    <li><a href="/dashboard">← Back to Dashboard</a></li>
+    <li><a href="/assistant">Pressure Valve</a></li>
+  </ul>
+</nav>
+
+<div class="q-page">
+
+  <!-- HERO -->
+  <div class="q-hero">
+    <div class="q-hero-title">Mental Health Assessment</div>
+    <p class="q-hero-sub">15 questions · ~5 minutes · 100% private. Answer honestly for the most accurate report.</p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="q-progress-wrap">
+    <div class="q-progress-header">
+      <span class="q-progress-label">Progress</span>
+      <span class="q-progress-count" id="progressCount">1 / 15</span>
+    </div>
+    <div class="q-progress-track">
+      <div class="q-progress-fill" id="progressFill" style="width: 6.67%"></div>
+    </div>
+  </div>
+
+  <!-- QUESTION AREA -->
+  <div class="q-wrap">
+    <form id="quizForm" action="/result" method="POST">
+
+      <!-- All 15 questions rendered, shown one at a time via JS -->
+      <div class="q-card" id="qCard">
+        <div class="q-category" id="qCategory">Energy</div>
+        <h2 class="q-question" id="qQuestion">How is your energy level today?</h2>
+        <div class="q-options" id="qOptions"></div>
+      </div>
+
+      <!-- Hidden inputs to collect answers -->
+      <div id="hiddenInputs"></div>
+
+    </form>
+  </div>
+
+</div>
+
+<script>
+  const questions = [
+    { num: 1,  cat: 'Energy',    key: 'q1',  text: 'How is your energy level today?',
+      opts: [['High & Productive', 10], ['Moderate / Fluctuating', 5], ['Very Low / Exhausted', 1]] },
+    { num: 2,  cat: 'Sleep',     key: 'q2',  text: 'How would you rate your sleep quality?',
+      opts: [['Deep & Restful', 10], ['Interrupted / Hard to fall asleep', 5], ['Poor / Significant Insomnia', 1]] },
+    { num: 3,  cat: 'Stress',    key: 'q3',  text: 'How often do you feel overwhelmed by daily tasks?',
+      opts: [['Rarely or Never', 10], ['Occasionally', 5], ['Nearly every day', 1]] },
+    { num: 4,  cat: 'Energy',    key: 'q4',  text: 'Do you find it difficult to start your day?',
+      opts: [['No, I feel ready', 10], ['Sometimes I struggle', 5], ['Yes, it is very difficult', 1]] },
+    { num: 5,  cat: 'Cognitive', key: 'q5',  text: 'How is your ability to concentrate?',
+      opts: [['Sharp and focused', 10], ['Easily distracted', 5], ['Cannot focus at all', 1]] },
+    { num: 6,  cat: 'Sleep',     key: 'q6',  text: 'Do you feel rested when you wake up?',
+      opts: [['Always', 10], ['Rarely', 5], ['Never', 1]] },
+    { num: 7,  cat: 'Stress',    key: 'q7',  text: 'Do you feel anxious about future events?',
+      opts: [['Not at all', 10], ['Somewhat anxious', 5], ['Constantly worried', 1]] },
+    { num: 8,  cat: 'Energy',    key: 'q8',  text: 'Do you experience physical fatigue?',
+      opts: [['Never', 10], ['After work', 5], ['Even after resting', 1]] },
+    { num: 9,  cat: 'Emotional', key: 'q9',  text: 'How is your appetite lately?',
+      opts: [['Normal', 10], ['Increased significantly', 5], ['Loss of appetite', 1]] },
+    { num: 10, cat: 'Sleep',     key: 'q10', text: 'Do you use sleep aids or medication?',
+      opts: [['No, never', 10], ['Occasionally', 5], ['Yes, regularly', 1]] },
+    { num: 11, cat: 'Emotional', key: 'q11', text: 'Do you feel motivated to pursue hobbies?',
+      opts: [['Very motivated', 10], ['Losing interest', 5], ['No interest at all', 1]] },
+    { num: 12, cat: 'Emotional', key: 'q12', text: 'How is your social interaction?',
+      opts: [['Enjoyable and frequent', 10], ['Avoiding people', 5], ['Complete isolation', 1]] },
+    { num: 13, cat: 'Sleep',     key: 'q13', text: 'Do you experience bad dreams?',
+      opts: [['Never', 10], ['Occasionally', 5], ['Frequently', 1]] },
+    { num: 14, cat: 'Stress',    key: 'q14', text: 'Do you feel restless or on edge?',
+      opts: [['Calm', 10], ['Irritable', 5], ['Highly agitated', 1]] },
+    { num: 15, cat: 'Cognitive', key: 'q15', text: 'Can you make decisions easily?',
+      opts: [['Yes, clearly', 10], ['Sometimes difficult', 5], ['Very hard to decide', 1]] },
+  ];
+
+  const catColors = {
+    'Energy':    '#0ee6b7',
+    'Sleep':     '#818cf8',
+    'Stress':    '#f59e0b',
+    'Cognitive': '#38bdf8',
+    'Emotional': '#f472b6',
+  };
+
+  let current = 0;
+  const answers = {};
+
+  function renderQuestion(idx) {
+    const q = questions[idx];
+    const total = questions.length;
+
+    // Update progress
+    document.getElementById('progressCount').textContent = `${idx + 1} / ${total}`;
+    document.getElementById('progressFill').style.width = `${((idx + 1) / total) * 100}%`;
+
+    // Update card
+    const catEl = document.getElementById('qCategory');
+    catEl.textContent = q.cat;
+    catEl.style.color = catColors[q.cat] || 'var(--brand)';
+    catEl.style.background = (catColors[q.cat] || 'var(--brand)') + '15';
+    catEl.style.borderColor = (catColors[q.cat] || 'var(--brand)') + '30';
+
+    document.getElementById('qQuestion').textContent = q.text;
+
+    const optWrap = document.getElementById('qOptions');
+    optWrap.innerHTML = '';
+
+    q.opts.forEach(([label, val]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'q-opt';
+      btn.innerHTML = `<span class="q-opt-dot"></span>${label}`;
+      btn.onclick = () => selectAnswer(q.key, val, btn);
+      optWrap.appendChild(btn);
+    });
+
+    // Animate card
+    const card = document.getElementById('qCard');
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    card.style.animation = 'slideUp 0.45s cubic-bezier(0.4,0,0.2,1)';
+  }
+
+  function selectAnswer(key, val, btn) {
+    answers[key] = val;
+
+    // Visual feedback
+    btn.style.borderColor = 'var(--brand)';
+    btn.style.background = 'var(--brand-soft)';
+    btn.querySelector('.q-opt-dot').style.background = 'var(--brand)';
+
+    setTimeout(() => {
+      if (current < questions.length - 1) {
+        current++;
+        renderQuestion(current);
+      } else {
+        submitForm();
+      }
+    }, 280);
+  }
+
+  function submitForm() {
+    const hiddenInputs = document.getElementById('hiddenInputs');
+    hiddenInputs.innerHTML = '';
+
+    Object.entries(answers).forEach(([key, val]) => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = key;
+      inp.value = val;
+      hiddenInputs.appendChild(inp);
+    });
+
+    // Fill any missing questions with default 5
+    questions.forEach(q => {
+      if (!(q.key in answers)) {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = q.key;
+        inp.value = 5;
+        hiddenInputs.appendChild(inp);
+      }
+    });
+
+    // Show loading state
+    document.getElementById('qCard').innerHTML = `
+      <div style="text-align:center; padding:40px 0;">
+        <div style="width:60px;height:60px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--brand);animation:spin 0.8s linear infinite;margin:0 auto 24px;"></div>
+        <div class="q-hero-title" style="font-size:24px;">Generating your report…</div>
+        <p style="color:var(--text-muted); margin-top:8px;">Analysing your responses with AI</p>
+      </div>
+      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    `;
+
+    setTimeout(() => {
+      document.getElementById('quizForm').submit();
+    }, 1200);
+  }
+
+  // Init
+  renderQuestion(0);
+</script>
+
+</body>
+</html>

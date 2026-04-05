@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindGuard — Your Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    :root { --result-color: {{ color }}; }
+    .result-tag { color: var(--result-color); border-color: var(--result-color); background: color-mix(in srgb, var(--result-color) 10%, transparent); }
+    .result-score-val { color: var(--result-color); }
+    .metric-fill { background: var(--result-color); }
+    .advice-block { border-color: color-mix(in srgb, var(--result-color) 40%, transparent); }
+    .advice-label { color: var(--result-color); }
+    .btn-download { background: var(--result-color); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="/dashboard" class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    MindGuard
+  </a>
+  <ul class="nav-links">
+    <li><a href="/questionnaire">Retake Assessment</a></li>
+    <li><a href="/dashboard" class="nav-cta">Dashboard</a></li>
+  </ul>
+</nav>
+
+<div class="result-page">
+  <div class="result-card">
+
+    <!-- HEADER -->
+    <div class="result-header">
+      <!-- SVG Ring -->
+      <div class="result-score-ring">
+        <svg viewBox="0 0 160 160" width="160" height="160" style="transform:rotate(-90deg)">
+          <circle cx="80" cy="80" r="68" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
+          <circle cx="80" cy="80" r="68" fill="none" stroke="{{ color }}" stroke-width="12"
+            stroke-linecap="round"
+            stroke-dasharray="{{ score * 4.27 }} 427"
+            style="transition: stroke-dasharray 1.4s cubic-bezier(0.4,0,0.2,1);"
+          />
+        </svg>
+        <div class="result-score-val">{{ score }}<span style="font-size:22px;font-weight:400;">%</span></div>
+      </div>
+
+      <div class="result-tag">{{ status }}</div>
+      <div class="result-label">Overall Resilience Capacity</div>
+      <p class="result-sub">Comprehensive breakdown of your mental wellness markers.</p>
+    </div>
+
+    <!-- BODY -->
+    <div class="result-body">
+      <h3 style="font-family:'Syne',sans-serif; font-size:16px; font-weight:700; margin-bottom:20px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Metric Breakdown</h3>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Biological</div>
+          <div class="metric-val">{{ bio }}<span style="font-size:20px;font-weight:400;">%</span></div>
+          <div class="metric-bar">
+            <div class="metric-fill" data-width="{{ bio }}" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Cognitive</div>
+          <div class="metric-val">{{ cog }}<span style="font-size:20px;font-weight:400;">%</span></div>
+          <div class="metric-bar">
+            <div class="metric-fill" data-width="{{ cog }}" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Emotional</div>
+          <div class="metric-val">{{ emo }}<span style="font-size:20px;font-weight:400;">%</span></div>
+          <div class="metric-bar">
+            <div class="metric-fill" data-width="{{ emo }}" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="advice-block">
+        <div class="advice-label">Primary Focus: {{ focus }} Recovery</div>
+        <p class="advice-text">{{ advice }}</p>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:28px;">
+        <a href="/dashboard" style="text-decoration:none;">
+          <button style="width:100%; padding:16px; background:var(--bg-elevated); color:var(--text); border:1px solid var(--border); border-radius:14px; font-family:'Syne',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:all 0.3s ease;" onmouseover="this.style.borderColor='var(--border-brand)'" onmouseout="this.style.borderColor='var(--border)'">
+            ← Back to Dashboard
+          </button>
+        </a>
+        <button onclick="window.print()" class="btn-download">
+          Download PDF Report ↓
+        </button>
+      </div>
+
+      <p style="font-size:12px; color:var(--text-dim); text-align:center; line-height:1.6;">
+        This report is for personal awareness only and does not constitute a clinical diagnosis.<br>
+        If you are in distress, please contact a mental health professional or call <strong style="color:var(--brand);">988</strong>.
+      </p>
+    </div>
+
+  </div>
+</div>
+  
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+
+</body>
+</html>
